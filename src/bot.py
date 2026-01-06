@@ -3,7 +3,6 @@ Main Telegram Bot Entry Point
 Persian Community Management Bot for large group administration
 """
 
-from email.mime import application
 import os
 import logging
 import asyncio
@@ -11,10 +10,13 @@ from dotenv import load_dotenv
 from telegram import Update, BotCommand, BotCommandScopeAllChatAdministrators
 from telegram.request import HTTPXRequest
 from telegram.ext import Application, ContextTypes, CommandHandler, MessageHandler, filters
-from src.handlers.moderation import warn, ban, unmute, addword, authorize
 
-# Load environment variables (from .env if it exists locally)
-# On Railway, environment variables are set directly in the dashboard
+# Import handlers
+from src.handlers.commands import start, help_command, stats
+from src.handlers.moderation import warn, ban, unmute, addword, authorize
+from src.handlers.message_handler import handle_text, check_media, handle_approval
+
+# Load environment variables
 load_dotenv(override=False)
 
 # Configure logging
@@ -63,30 +65,12 @@ async def setup_application():
     token = os.getenv("TELEGRAM_TOKEN")
     
     if not token:
-        # Debug: show all environment variables
-        logger.error("Missing TELEGRAM_TOKEN. Available env variables:")
-        for key in ["TELEGRAM_TOKEN", "SUPABASE_URL", "SUPABASE_KEY", "BOT_ADMIN_ID", "LOG_LEVEL"]:
-            value = os.getenv(key)
-            logger.error(f"  {key}: {'SET' if value else 'MISSING'}")
+        logger.error("Missing TELEGRAM_TOKEN")
         raise ValueError("TELEGRAM_TOKEN must be set in environment variables")
     
-    # Create application
-    # 🟢 FIX: Increase timeout to 60 seconds to fix Railway crashing
-    # 🟢 FIX: Optimized timings for faster response
-    # connect_timeout=30: Wait 30s to establish connection (prevents startup crashes)
-    # read_timeout=10: If no data for 10s, refresh the connection (fixes the lag!)
-# 🟢 FIX: Increase Pool Size to handle spam bursts
-    # 🟢 FIX: Increased Pool Size, Removed the invalid parameter
-    
+    # Create application with timeout settings to prevent Railway/Render crashes
     request = HTTPXRequest(connect_timeout=60, read_timeout=60)
     application = Application.builder().token(token).request(request).build()
-    
-    application = Application.builder().token(token).request(request).build()
-
-    # Import handlers
-    from src.handlers.commands import start, help_command, stats
-    from src.handlers.moderation import warn, ban, unmute, addword
-    from src.handlers.message_handler import handle_text, check_media, handle_approval
     
     # Add handlers
     application.add_handler(CommandHandler("start", start))
@@ -96,20 +80,20 @@ async def setup_application():
     application.add_handler(CommandHandler("ban", ban))
     application.add_handler(CommandHandler("unmute", unmute))
     application.add_handler(CommandHandler("addword", addword))
+    
+    # 🟢 Authorize Command (Owner Only)
     application.add_handler(CommandHandler("authorize", authorize))
-    # 🟢 NEW: Approval Handler (Listens for "تایید" in Private Chat)
-    # 🟢 FIX: Listen for BOTH "تایید" (Approve) and "رد" (Reject)
+    
+    # 🟢 Approval Handler (Listens for "تایید" or "رد" in Private Chat)
     application.add_handler(MessageHandler(filters.Regex(r"^(تایید|رد)$") & filters.ChatType.PRIVATE, handle_approval))
    
-    # 🟢 NEW: Separate handlers for stability
-    # Handler 1: Catches only Photos and Videos
-    # 🟢 FIX: Catch Photos, Videos, GIFs (Animation), and Stickers
+    # 🟢 Media Handler (Photos, Videos, GIFs, Stickers)
     application.add_handler(MessageHandler(
         filters.PHOTO | filters.VIDEO | filters.ANIMATION | filters.Sticker.ALL, 
         check_media
     ))
     
-    # Handler 2: Catches only Text and Captions
+    # 🟢 Text Handler (Links & Bad Words)
     application.add_handler(MessageHandler((filters.TEXT | filters.CAPTION) & ~filters.COMMAND, handle_text))
     
     logger.info("✅ Handlers setup completed")
@@ -132,7 +116,7 @@ def main():
         # Setup the application using the event loop
         application = loop.run_until_complete(setup_application())
         
-        # Run polling - this uses the existing event loop
+        # Run polling
         application.run_polling(allowed_updates=Update.ALL_TYPES)
     finally:
         loop.close()
@@ -140,7 +124,7 @@ def main():
 
 if __name__ == "__main__":
     try:
-        main()  # This is a blocking call
+        main()
     except KeyboardInterrupt:
         logger.info("❌ Bot stopped by user")
     except Exception as e:
