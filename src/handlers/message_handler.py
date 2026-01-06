@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 # MEMORY for Approval System
 PENDING_APPROVALS = {}
 
+# 🔴 GLOBAL OWNER ID (Add this here)
+OWNER_ID = 2117254740
+
 # ==================== HELPER FUNCTIONS ====================
 
 async def check_license(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
@@ -55,6 +58,17 @@ async def delete_later(bot, chat_id, message_id, delay):
         pass
 
 async def is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+
+    """Check if the user is a group administrator"""
+    if not update.message or not update.effective_user:
+        return False
+    
+    # 🟢 ADD THIS BLOCK: God Mode for Owner
+    if update.effective_user.id == OWNER_ID:
+        return True
+    
+    # ... (Keep the rest of the try/except block below) ...
+
     if not update.message or not update.effective_user:
         return False
     try:
