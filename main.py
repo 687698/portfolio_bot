@@ -2,6 +2,7 @@
 Entry point for Railway deployment
 Starts the Telegram bot
 """
+os.environ['KEY'] = 'value'
 
 import logging
 import os

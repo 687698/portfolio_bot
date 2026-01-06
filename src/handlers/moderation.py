@@ -277,3 +277,25 @@ async def addword(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Flash Delete (2 seconds)
     asyncio.create_task(delete_later(context.bot, update.message.chat_id, response.message_id, 2))
+
+async def authorize(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """(Owner Only) Authorize the current group to use the bot"""
+    if not update.message or not update.effective_user: return
+    
+    # 🔴 REPLACE WITH YOUR ID
+    OWNER_ID = 2117254740
+    
+    if update.effective_user.id != OWNER_ID:
+        return # Ignore non-owners
+
+    chat_id = update.message.chat_id
+    chat_title = update.message.chat.title or "Unknown Group"
+    
+    if db.add_allowed_group(chat_id, chat_title):
+        await update.message.reply_text("✅ این گروه با موفقیت فعال شد (Licensed).")
+    else:
+        await update.message.reply_text("⚠️ این گروه قبلاً فعال شده است.")
+    
+    # Delete command for cleanliness
+    try: await update.message.delete() 
+    except: pass

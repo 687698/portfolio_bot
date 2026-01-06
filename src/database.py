@@ -332,6 +332,25 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error resetting warns: {e}")
             return False
+    # ==================== License System ====================
+    
+    def is_group_allowed(self, chat_id: int) -> bool:
+        """Check if group is in allowed_groups table"""
+        try:
+            response = self.client.table("allowed_groups").select("chat_id").eq("chat_id", chat_id).execute()
+            return len(response.data) > 0
+        except Exception as e:
+            logger.error(f"Error checking license: {e}")
+            return False
+
+    def add_allowed_group(self, chat_id: int, note: str = "") -> bool:
+        """Add a group to the whitelist"""
+        try:
+            self.client.table("allowed_groups").insert({"chat_id": chat_id, "note": note}).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Error adding group: {e}")
+            return False
 
 # Initialize database manager instance
 db = DatabaseManager()

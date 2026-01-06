@@ -3,6 +3,7 @@ Main Telegram Bot Entry Point
 Persian Community Management Bot for large group administration
 """
 
+from email.mime import application
 import os
 import logging
 import asyncio
@@ -10,6 +11,7 @@ from dotenv import load_dotenv
 from telegram import Update, BotCommand, BotCommandScopeAllChatAdministrators
 from telegram.request import HTTPXRequest
 from telegram.ext import Application, ContextTypes, CommandHandler, MessageHandler, filters
+from src.handlers.moderation import warn, ban, unmute, addword, authorize
 
 # Load environment variables (from .env if it exists locally)
 # On Railway, environment variables are set directly in the dashboard
@@ -94,6 +96,7 @@ async def setup_application():
     application.add_handler(CommandHandler("ban", ban))
     application.add_handler(CommandHandler("unmute", unmute))
     application.add_handler(CommandHandler("addword", addword))
+    application.add_handler(CommandHandler("authorize", authorize))
     # 🟢 NEW: Approval Handler (Listens for "تایید" in Private Chat)
     # 🟢 FIX: Listen for BOTH "تایید" (Approve) and "رد" (Reject)
     application.add_handler(MessageHandler(filters.Regex(r"^(تایید|رد)$") & filters.ChatType.PRIVATE, handle_approval))

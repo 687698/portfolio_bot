@@ -17,6 +17,35 @@ PENDING_APPROVALS = {}
 
 # ==================== HELPER FUNCTIONS ====================
 
+async def check_license(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """Returns True if allowed, False if bot should leave."""
+    if not update.message: return True
+    
+    chat = update.message.chat
+    
+    # Always allow Private chats (DMs with you)
+    if chat.type == 'private':
+        return True
+        
+    # Check Database
+    if db.is_group_allowed(chat.id):
+        return True
+        
+    # ❌ NOT ALLOWED
+    try:
+        await update.message.reply_text(
+            f"⛔ <b>خدمات محدود است!</b>\n\n"
+            f"این ربات خصوصی است و برای این گروه فعال نشده.\n"
+            f"🆔 شناسه گروه: <code>{chat.id}</code>\n\n"
+            f"برای خرید لایسنس به @Hjnjgvb پیام دهید.",
+            parse_mode="HTML"
+        )
+        await context.bot.leave_chat(chat.id)
+    except Exception as e:
+        logger.error(f"Error leaving chat: {e}")
+        
+    return False
+
 async def delete_later(bot, chat_id, message_id, delay):
     """Wait for 'delay' seconds, then delete the message"""
     try:
@@ -155,6 +184,15 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ==================== HANDLER 2: MEDIA (MANUAL ONLY) ====================
 
 async def check_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    if not update.message or not update.effective_user: return
+    
+    # 🔒 LICENSE CHECK
+    if not await check_license(update, context):
+        return
+
+    if await is_admin(update, context): return
+
     """
     Handles Photos/Videos/GIFs/Stickers.
     NO AI -> Direct Forward to Admin.
@@ -194,6 +232,16 @@ async def check_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ==================== HANDLER 3: TEXT ====================
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    if not update.message or not update.effective_user: return
+    
+    # 🔒 LICENSE CHECK
+    if not await check_license(update, context):
+        return
+
+    user = update.effective_user
+    # ... rest of code ...
+
     if not update.message or not update.effective_user: return
     
     user = update.effective_user
