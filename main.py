@@ -1,18 +1,17 @@
 """
-Entry point for Railway deployment
+Entry point for Portfolio Bot
 Starts the Telegram bot
 """
-os.environ['KEY'] = 'value'
 
 import logging
 import os
+import asyncio
 from dotenv import load_dotenv
-from keep_alive import keep_alive
 
-# Load environment variables
-load_dotenv(override=False)
+# Load environment variables from .env file
+load_dotenv(override=True)
 
-# Setup logging before importing bot
+# Setup logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=os.getenv("LOG_LEVEL", "INFO")
@@ -25,17 +24,17 @@ try:
     from src.bot import main
     logger.info("✅ Successfully imported main from src.bot")
     
-    # 🟢 NEW: Start the fake web server to keep the bot alive on Render
-    keep_alive()
-    logger.info("✅ Keep-alive server started")
+    # We do NOT need keep_alive on PythonAnywhere (it uses Consoles, not Web Services)
+    # keep_alive() 
 
-    # Start the bot (This blocks the script, so keep_alive must be above it)
-    main()  
+    if __name__ == "__main__":
+        main()
+        
 except ImportError as e:
     logger.error(f"❌ Import error: {e}", exc_info=True)
     raise
 except KeyboardInterrupt:
     logger.info("❌ Bot stopped by user")
 except Exception as e:
-    logger.error(f"❌ خطای غیرمنتظره: {e}", exc_info=True)
+    logger.error(f"❌ Unexpected error: {e}", exc_info=True)
     raise
