@@ -14,7 +14,7 @@ from telegram.ext import Application, ContextTypes, CommandHandler, MessageHandl
 # Import handlers
 from src.handlers.commands import start, help_command, stats
 from src.handlers.moderation import warn, ban, unmute, addword, authorize
-from src.handlers.message_handler import handle_text, check_media, handle_approval
+from src.handlers.message_handler import handle_text, check_media, handle_approval, handle_new_chat_members
 
 # Load environment variables
 load_dotenv(override=False)
@@ -87,6 +87,9 @@ async def setup_application():
     # 🟢 Approval Handler (Listens for "تایید" or "رد" in Private Chat)
     application.add_handler(MessageHandler(filters.Regex(r"^(تایید|رد)$") & filters.ChatType.PRIVATE, handle_approval))
    
+    # 🟢 Trigger License Check when added to group
+    application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handle_new_chat_members))
+
     # 🟢 Media Handler (Photos, Videos, GIFs, Stickers)
     application.add_handler(MessageHandler(
         filters.PHOTO | filters.VIDEO | filters.ANIMATION | filters.Sticker.ALL, 

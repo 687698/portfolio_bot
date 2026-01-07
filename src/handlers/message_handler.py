@@ -186,6 +186,20 @@ async def check_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ==================== HANDLER 3: TEXT ====================
 
+async def handle_new_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Runs immediately when bot is added to a group"""
+    if not update.message: return
+    
+    # Check if the BOT itself was the one added
+    for member in update.message.new_chat_members:
+        if member.id == context.bot.id:
+            # Bot was just added! Check License immediately.
+            if not await check_license(update, context):
+                return
+            
+            # If licensed, say hello
+            await update.message.reply_text("✅ ربات آماده به کار است.")
+
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.effective_user: return
     
